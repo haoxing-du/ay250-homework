@@ -1,0 +1,17 @@
+<!doctype html>
+    <title>Run query</title>
+    <h1>run your query</h1>
+
+    <form method=post enctype=multipart/form-data>
+      please query the database with the form below. <br>
+      use SQL query syntax to enter the query string that follows the "WHERE". <br>
+      column names are "ref_tag", "author_list", "journal", "volume" (int), "pages", "year" (int), "title", and "collection". <br>
+      to use wildcards, use "LIKE" and employ the percent symbol ("%") as multi-character wildcard and underscore ("_") as single-character wildcard. <br>
+      make sure to explicitly put strings in quotes. <br>
+      [if I had more time, I would implement a version of this that does not simply run whatever SQL code that the user provides. This seems like a dangerous recipe!]
+      <br><br>
+      <input type=text name="query">
+      <input type=submit value="query">
+    </form>
+    <br>
+    <a href="./">back to home page</a>
