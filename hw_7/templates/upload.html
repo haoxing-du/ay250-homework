@@ -4,9 +4,18 @@
 
     <form method=post enctype=multipart/form-data>
       please enter the name for your new collection, and upload your .bib file. <br><br>
+      collection name:
       <input type=text name="name">
       <input type=file name=file>
       <input type=submit value=upload>
     </form>
+    <br>
+
+    present collections:<br>
+    <ul>
+        {% for collection in collections: %}
+        <li>{{collection}}</li>
+        {% endfor %}
+    </ul>
     <br>
     <a href="./">back to home page</a>

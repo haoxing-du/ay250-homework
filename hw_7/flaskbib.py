@@ -20,65 +20,58 @@ cursor.execute("""
     create table if not exists bib (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         ref_tag TEXT UNIQUE NOT NULL,
-        author_list TEXT NOT NULL,
-        journal TEXT NOT NULL,
+        author_list TEXT,
+        journal TEXT,
         volume INTEGER,
         pages TEXT,
         year INTEGER,
-        title TEXT NOT NULL,
-        collection TEXT NOT NULL
+        title TEXT,
+        collection TEXT
     );
 """)
+cursor.execute("delete from bib;")
 conn.commit()
 
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def pybtex_parser(filename, collection_name):
+def pybtex_parser(filename, collection):
     data = parse_file(filename, 'bibtex')
     data_lower = data.lower()
     for entry in data_lower.entries.values():
         ref_tag = entry.key
-        authors = entry.persons['author']
+        authors = entry.persons['author'] if 'author' in entry.persons else None
         author_list = []
-        for author in authors:
-            first_names = ' '.join(author.first_names)
-            last_names = ' '.join(author.last_names)
-            middle_names = ' '.join(author.middle_names)
-            author_str = last_names + ', ' + first_names + ' ' + middle_names
-            author_list.append(author_str)
+        if authors is not None:
+            for author in authors:
+                first_names = ' '.join(author.first_names)
+                last_names = ' '.join(author.last_names)
+                middle_names = ' '.join(author.middle_names)
+                author_str = last_names + ', ' + first_names + ' ' + middle_names
+                author_list.append(author_str)
+        
+        author_list_str = ','.join(author_list)
 
         title = entry.fields['title']
 
-        if 'journal' in entry.fields.keys():
-            journal = entry.fields['journal']
-        else:
-            journal = None
-
-        if 'volume' in entry.fields.keys():
-            volume = int(entry.fields['volume'])
-        else:
-            volume = None
-
-        if 'pages' in entry.fields.keys():
-            pages = entry.fields['pages']
-        else:
-            pages = None
-
-        if 'year' in entry.fields.keys():
-            year = int(entry.fields['year'])
-        else:
-            year = None
-
-        if 'volume' in entry.fields.keys():
-            volume = entry.fields['volume']
-        else:
-            volume = None
+        journal = entry.fields.get('journal')
+        pages = entry.fields.get('pages')
+        volume = int(entry.fields['volume']) if "volume" in entry.fields else None
+        year = int(entry.fields['year']) if "year" in entry.fields else None
         
-        cursor.execute(f"insert into bib (ref_tag) values ({ref_tag})")
-        
-    return ""
+        cmd = "insert into bib (ref_tag, author_list, journal, volume," + \
+              "pages, year, title, collection) values (?, ?, ?, ?, ?, ?, ?, ?)"
+        cursor.execute(cmd, (ref_tag, author_list_str, journal, volume,
+                             pages, year, title, collection))
+
+        #cmd = "insert into bib (ref_tag, author_list, journal, volume," + \
+        #          "pages, year, title, collection)" + \
+        #         f" values ('{ref_tag}', '{author_list_str}', '{journal}', {volume}, " + \
+        #         f"""'{pages}', {year}, '{title}', '{collection}')"""
+        #cursor.execute(cmd)
+        conn.commit()
+    return
 
 @app.route('/', methods=['GET', 'POST'])
 def welcome():
@@ -96,7 +89,7 @@ def insert_collection():
             flash('No file part')
             return redirect(request.url)
         file = request.files['file']
-        collection_name = request.form['name']
+        collection = request.form['name']
         # If the user does not select a file, the browser submits an
         # empty file without a filename.
         if file.filename == '':
@@ -106,20 +99,27 @@ def insert_collection():
             filename = secure_filename(file.filename)
             file_name_and_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(file_name_and_path)
-            cmd = pybtex_parser(file_name_and_path, collection_name)
+            pybtex_parser(file_name_and_path, collection)        
 
             return redirect(request.url)
-            #return redirect(url_for('download_file', name=filename))
+    
+    cursor.execute('select distinct collection from bib')
+    output = cursor.fetchall()
+    collections = [elem[0] for elem in output]
+    return render_template("upload.html", collections=collections)
 
-    return render_template("upload.html")
-
-@app.route('/query', methods=['GET', 'POST'])
+@app.route('/query', methods=['GET'])
 def query():
-    if request.method == 'POST':
-        query = request.form['query']
-        return redirect(request.url)
-
-    return render_template("query.html")
+    query = request.args.get("query")
+    if query is None:
+        return render_template("query.html")
+    cmd = 'select * from bib where ' + query
+    cursor.execute(cmd)
+    output = cursor.fetchall()
+    for entry in output:
+        id, ref_tag, author_list, journal, volume, pages, year, title, collection = entry
+    print(output)
+    return render_template("query.html", output=output)
 
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True)

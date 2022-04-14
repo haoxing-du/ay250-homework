@@ -2,7 +2,7 @@
     <title>Run query</title>
     <h1>run your query</h1>
 
-    <form method=post enctype=multipart/form-data>
+    <form method=get enctype=multipart/form-data>
       please query the database with the form below. <br>
       use SQL query syntax to enter the query string that follows the "WHERE". <br>
       column names are "ref_tag", "author_list", "journal", "volume" (int), "pages", "year" (int), "title", and "collection". <br>
@@ -14,4 +14,20 @@
       <input type=submit value="query">
     </form>
     <br>
+
+    <ul>
+        {% for id, ref_tag, author_list, journal, volume, pages, year, title, collection in output: %}
+        <li>reference tag: {{ref_tag}} <br>
+            author list: {{author_list}} <br>
+            journal: {{journal}} <br>
+            volume: {{volume}} <br>
+            pages: {{pages}} <br>
+            year: {{year}} <br>
+            title: {{title}} <br>
+            collection: {{collection}} <br>
+        </li>
+        {% endfor %}
+    </ul>
+    <br>
+
     <a href="./">back to home page</a>
