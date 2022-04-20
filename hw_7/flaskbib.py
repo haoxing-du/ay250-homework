@@ -64,21 +64,13 @@ def pybtex_parser(filename, collection):
               "pages, year, title, collection) values (?, ?, ?, ?, ?, ?, ?, ?)"
         cursor.execute(cmd, (ref_tag, author_list_str, journal, volume,
                              pages, year, title, collection))
-
-        #cmd = "insert into bib (ref_tag, author_list, journal, volume," + \
-        #          "pages, year, title, collection)" + \
-        #         f" values ('{ref_tag}', '{author_list_str}', '{journal}', {volume}, " + \
-        #         f"""'{pages}', {year}, '{title}', '{collection}')"""
-        #cursor.execute(cmd)
         conn.commit()
     return
 
 @app.route('/', methods=['GET', 'POST'])
 def welcome():
     if request.method == 'POST':
-        
             return redirect(request.url)
-
     return render_template("home.html")
 
 @app.route('/insert_collection', methods=['GET', 'POST'])
@@ -116,9 +108,6 @@ def query():
     cmd = 'select * from bib where ' + query
     cursor.execute(cmd)
     output = cursor.fetchall()
-    for entry in output:
-        id, ref_tag, author_list, journal, volume, pages, year, title, collection = entry
-    print(output)
     return render_template("query.html", output=output)
 
 if __name__ == "__main__":
